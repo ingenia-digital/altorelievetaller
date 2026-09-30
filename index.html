@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ALTO RELIEVE - Gestor de Pedidos y Producción</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdfa',
+                            100: '#ccfbf1',
+                            400: '#2dd4bf',
+                            500: '#14b8a6',
+                            600: '#0d9488',
+                            700: '#0f766e',
+                            900: '#134e4a',
+                            950: '#042f2e'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #0f172a; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col custom-scrollbar">
+
+    <header class="bg-gradient-to-r from-blue-900 via-slate-900 to-slate-900 border-b border-blue-500/30 sticky top-0 z-40 shadow-2xl">
+        <div class="max-w-7xl mx-auto px-4 py-3 sm:px-6 flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+                <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-blue-950 p-2 shadow-xl shadow-blue-600/30 flex items-center justify-center overflow-hidden border-2 border-blue-400/50 transform hover:scale-105 transition-transform duration-300">
+                    <img src="https://uploads.onecompiler.io/43vjzagjf/1790774308130/ecd79465-504a-46bd-817c-660fb34ddf19-removebg-preview.png" alt="Alto Relieve Logo" class="w-full h-full object-contain filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]" onerror="this.src='https://placehold.co/120x120/1d4ed8/ffffff?text=AR'">
+                </div>
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-extrabold tracking-tight text-white flex items-center gap-2.5">
+                        ALTO RELIEVE 
+                        <span class="text-blue-300 text-xs uppercase px-3 py-1 bg-blue-600/40 rounded-full border border-blue-400/40 font-bold tracking-wide shadow-sm">Taller Pro</span>
+                    </h1>
+                    <p class="text-xs sm:text-sm text-slate-300 font-medium">Impresión 3D & Cartelería - Cronograma y Producción</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <button onclick="openNewOrderModal()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 sm:px-5 py-2.5 sm:py-3 rounded-2xl text-sm transition shadow-lg shadow-blue-600/30 flex items-center gap-2 border border-blue-400/30">
+                    <i class="fa-solid fa-plus text-xs"></i> <span class="hidden sm:inline">Nuevo Pedido</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-6 sm:px-6 flex flex-col gap-6">
+        
+        <!-- KPI Metrics Bar -->
+        <section class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-slate-900 border border-slate-800/80 rounded-2xl p-4 shadow-sm relative overflow-hidden">
+                <div class="absolute right-3 top-3 text-slate-800 text-3xl"><i class="fa-solid fa-list-check"></i></div>
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">En Cola (Pendientes)</span>
+                <h3 id="stat-pending" class="text-2xl sm:text-3xl font-bold text-white mt-1">0</h3>
+                <p class="text-xs text-slate-500 mt-1">Esperando turno de taller</p>
+            </div>
+            <div class="bg-slate-900 border border-slate-800/80 rounded-2xl p-4 shadow-sm relative overflow-hidden">
+                <div class="absolute right-3 top-3 text-blue-500/25 text-3xl"><i class="fa-solid fa-hammer animate-bounce"></i></div>
+                <span class="text-xs font-semibold uppercase tracking-wider text-blue-400">En Proceso (Foco Activo)</span>
+                <h3 id="stat-active" class="text-2xl sm:text-3xl font-bold text-blue-400 mt-1">0</h3>
+                <p class="text-xs text-slate-500 mt-1">Fabricándose ahora mismo</p>
+            </div>
+            <div class="bg-slate-900 border border-slate-800/80 rounded-2xl p-4 shadow-sm relative overflow-hidden">
+                <div class="absolute right-3 top-3 text-slate-800 text-3xl"><i class="fa-solid fa-clock"></i></div>
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Carga Acumulada</span>
+                <h3 id="stat-workload" class="text-2xl sm:text-3xl font-bold text-white mt-1">0h</h3>
+                <p class="text-xs text-slate-500 mt-1">Tiempo total en cola</p>
+            </div>
+            <div class="bg-slate-900 border border-slate-800/80 rounded-2xl p-4 shadow-sm relative overflow-hidden">
+                <div class="absolute right-3 top-3 text-slate-800 text-3xl"><i class="fa-solid fa-flag-checkered"></i></div>
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Entregados / Listos</span>
+                <h3 id="stat-done" class="text-2xl sm:text-3xl font-bold text-emerald-400 mt-1">0</h3>
+                <p class="text-xs text-slate-500 mt-1">Completados este mes</p>
+            </div>
+        </section>
+
+        <!-- Focus Rule Warning Box -->
+        <div id="active-warning" class="hidden bg-blue-950/40 border border-blue-600/40 rounded-2xl p-4 flex items-start gap-3 text-blue-200 text-sm shadow-md">
+            <i class="fa-solid fa-shield-halved text-blue-400 text-lg mt-0.5"></i>
+            <div>
+                <span class="font-bold">Regla de Foco Antiatrasos:</span> Tienes un trabajo activo en el taller. Para evitar dispersión y retrasos, el sistema restringe abrir otro proceso hasta finalizar o pausar el actual.
+            </div>
+        </div>
+
+        <!-- Search & Filters -->
+        <section class="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-4 bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
+            <div class="relative flex-1">
+                <i class="fa-solid fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-sm"></i>
+                <input type="text" id="search-input" oninput="renderApp()" placeholder="Buscar por cliente, teléfono, detalles, costo..." class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-blue-500 transition">
+            </div>
+            <div class="flex items-center gap-2 overflow-x-auto pb-1 lg:pb-0">
+                <button onclick="setFilter('all')" id="filter-all" class="filter-btn px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-800 text-white transition whitespace-nowrap shadow-sm">Todos</button>
+                <button onclick="setFilter('pending')" id="filter-pending" class="filter-btn px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-900 text-slate-400 hover:bg-slate-800 transition whitespace-nowrap">En Cola</button>
+                <button onclick="setFilter('active')" id="filter-active" class="filter-btn px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-900 text-slate-400 hover:bg-slate-800 transition whitespace-nowrap">En Proceso</button>
+                <button onclick="setFilter('ready')" id="filter-ready" class="filter-btn px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-900 text-slate-400 hover:bg-slate-800 transition whitespace-nowrap">Listos</button>
+                <button onclick="setFilter('delivered')" id="filter-delivered" class="filter-btn px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-900 text-slate-400 hover:bg-slate-800 transition whitespace-nowrap">Entregados</button>
+            </div>
+        </section>
+
+        <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 items-start">
+            
+            <!-- Col 1: En Cola -->
+            <div class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-4 flex flex-col min-h-[550px]">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-slate-500"></span>
+                        <h2 class="font-semibold text-xs uppercase tracking-wider text-slate-300">1. En Cola (Pendiente)</h2>
+                    </div>
+                    <span id="count-pending" class="bg-slate-800 text-slate-300 text-xs px-2.5 py-0.5 rounded-full font-bold">0</span>
+                </div>
+                <div id="col-pending" class="flex-1 flex flex-col gap-3.5 overflow-y-auto custom-scrollbar"></div>
+            </div>
+
+            <!-- Col 2: En Proceso -->
+            <div class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-4 flex flex-col min-h-[550px]">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-blue-500 animate-ping"></span>
+                        <h2 class="font-semibold text-xs uppercase tracking-wider text-blue-400">2. En Proceso (Taller)</h2>
+                    </div>
+                    <span id="count-active" class="bg-blue-500/20 text-blue-300 text-xs px-2.5 py-0.5 rounded-full font-bold">0</span>
+                </div>
+                <div id="col-active" class="flex-1 flex flex-col gap-3.5 overflow-y-auto custom-scrollbar"></div>
+            </div>
+
+            <!-- Col 3: Listo / Control -->
+            <div class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-4 flex flex-col min-h-[550px]">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-indigo-500"></span>
+                        <h2 class="font-semibold text-xs uppercase tracking-wider text-indigo-400">3. Control / Listo</h2>
+                    </div>
+                    <span id="count-ready" class="bg-indigo-500/20 text-indigo-300 text-xs px-2.5 py-0.5 rounded-full font-bold">0</span>
+                </div>
+                <div id="col-ready" class="flex-1 flex flex-col gap-3.5 overflow-y-auto custom-scrollbar"></div>
+            </div>
+
+            <!-- Col 4: Entregado -->
+            <div class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-4 flex flex-col min-h-[550px]">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+                        <h2 class="font-semibold text-xs uppercase tracking-wider text-emerald-400">4. Entregado</h2>
+                    </div>
+                    <span id="count-delivered" class="bg-emerald-500/20 text-emerald-300 text-xs px-2.5 py-0.5 rounded-full font-bold">0</span>
+                </div>
+                <div id="col-delivered" class="flex-1 flex flex-col gap-3.5 overflow-y-auto custom-scrollbar"></div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- Modal: Nuevo / Editar Pedido -->
+    <div id="order-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white transition">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <h2 id="modal-title" class="text-xl font-bold text-white mb-4">Nuevo Pedido de Cartelería / 3D</h2>
+            
+            <form id="order-form" onsubmit="handleFormSubmit(event)" class="space-y-4">
+                <input type="hidden" id="order-id">
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Nombre del Cliente *</label>
+                        <input type="text" id="client-name" required placeholder="Ej. Panadería Don Satur" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Teléfono / WhatsApp *</label>
+                        <input type="text" id="client-phone" required placeholder="Ej. +54 9 11 2345 6789" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-blue-500">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Categoría del Producto *</label>
+                        <select id="order-category" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-blue-500">
+                            <option value="Letras Corpóreas">🔤 Letras Corpóreas (PVC/Acrílico/Chapa)</option>
+                            <option value="Cartel Exterior">🏢 Cartel Exterior / Luminoso</option>
+                            <option value="Impresión 3D">🖨️ Impresión 3D Profesional</option>
+                            <option value="Corte Láser / CNC">⚡ Corte Láser / Grabado</option>
+                            <option value="Vinilo / Microperforado">🎨 Vinilo Impreso / Corte</option>
+                            <option value="Señalética">📍 Señalética / Cartelería Interna</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Costo del Trabajo ($) *</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
+                            <input type="number" id="order-cost" min="0" step="100" required placeholder="Ej. 45000" class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-8 pr-3 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-blue-500">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Medidas o Especificaciones</label>
+                        <input type="text" id="order-specs" placeholder="Ej. 1.20 x 0.50m, Espesor 20mm" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Fecha de Ingreso</label>
+                        <input type="date" id="order-date" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-blue-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Descripción Detallada del Trabajo *</label>
+                    <textarea id="order-desc" required rows="3" placeholder="Ej. Corpóreos en Polyfan de 20mm pintados en color negro satinado con luz LED cálida indirecta..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-blue-500 resize-none"></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Prioridad</label>
+                        <select id="order-priority" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-blue-500">
+                            <option value="normal">Normal</option>
+                            <option value="urgente">Urgente 🔥</option>
+                            <option value="evento">Fecha Fija / Evento 🎯</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Tiempo Estimado de Taller</label>
+                        <div class="flex gap-2">
+                            <input type="number" id="order-time" min="0.5" step="0.5" required value="6" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-blue-500">
+                            <select id="order-time-unit" class="bg-slate-950 border border-slate-800 rounded-xl px-2 py-2.5 text-xs text-slate-300 focus:outline-none focus:border-blue-500">
+                                <option value="hours">Horas</option>
+                                <option value="days">Días</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-3 pt-4 border-t border-slate-800">
+                    <button type="button" onclick="closeModal()" class="px-4 py-2.5 rounded-xl text-xs font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 transition">Cancelar</button>
+                    <button type="submit" class="px-5 py-2.5 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white transition shadow-lg shadow-blue-600/30">Guardar Pedido</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Razón de Cancelación / Eliminación con Burbuja -->
+    <div id="cancel-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+            <button onclick="closeCancelModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white transition">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <div class="flex items-center gap-3 mb-4">
+                <div class="bg-rose-600 text-white p-2.5 rounded-2xl text-lg shadow-lg shadow-rose-600/30">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div>
+                    <h2 class="text-lg font-bold text-white">Motivo de Cancelación</h2>
+                    <p class="text-xs text-slate-400">Burbuja de registro para indicar por qué no se hizo</p>
+                </div>
+            </div>
+
+            <form onsubmit="confirmDeleteOrder(event)" class="space-y-4">
+                <input type="hidden" id="cancel-order-id">
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Razón / Motivo (Obligatorio) *</label>
+                    <textarea id="cancel-reason" required rows="3" placeholder="Ej. El cliente canceló por presupuesto, se postergó la obra, falta de stock de acrílico..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-100 focus:outline-none focus:border-rose-500 resize-none"></textarea>
+                </div>
+
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" onclick="closeCancelModal()" class="px-4 py-2.5 rounded-xl text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 transition">Volver</button>
+                    <button type="submit" class="px-5 py-2.5 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white transition shadow-lg shadow-rose-600/30">Confirmar Eliminación</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: WhatsApp Sender -->
+    <div id="whatsapp-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative">
+            <button onclick="closeWhatsAppModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white transition">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <div class="flex items-center gap-3 mb-4">
+                <div class="bg-emerald-600 text-white p-2.5 rounded-2xl text-lg shadow-lg shadow-emerald-600/30">
+                    <i class="fa-brands fa-whatsapp"></i>
+                </div>
+                <div>
+                    <h2 class="text-lg font-bold text-white">Mensaje para Cliente (Alto Relieve)</h2>
+                    <p class="text-xs text-slate-400">Plantilla profesional con cronograma y detalles</p>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Texto del Mensaje (Editable)</label>
+                    <textarea id="whatsapp-text" rows="6" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-100 focus:outline-none focus:border-emerald-500 leading-relaxed"></textarea>
+                </div>
+
+                <div class="flex flex-col sm:flex-row justify-end gap-3 pt-2">
+                    <button type="button" onclick="copyWhatsAppText()" class="px-4 py-2.5 rounded-xl text-xs font-medium bg-slate-800 hover:bg-slate-700 text-white transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-copy"></i> Copiar Texto
+                    </button>
+                    <a id="whatsapp-link" href="#" target="_blank" class="px-5 py-2.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2">
+                        <i class="fa-brands fa-whatsapp text-sm"></i> Abrir en WhatsApp
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-900 border border-slate-800 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3 text-sm">
+        <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400 text-lg"></i>
+        <span id="toast-message">Operación exitosa</span>
+    </div>
+
+    <script>
+        // Initial sample orders pre-loaded for Alto Relieve
+        let orders = JSON.parse(localStorage.getItem('altorelieve_orders')) || [
+            {
+                id: 'ord-201',
+                clientName: 'Café & Panadería Le Pain',
+                clientPhone: '+5491122334455',
+                category: 'Letras Corpóreas',
+                cost: 85000,
+                specs: '1.20m x 0.40m, PVC 20mm',
+                description: 'Corpóreos pintados en dorado mate con iluminación indirecta trasera',
+                priority: 'urgente',
+                hours: 12,
+                date: new Date().toISOString().split('T')[0],
+                status: 'active',
+                createdAt: Date.now() - 3600000 * 6
+            },
+            {
+                id: 'ord-202',
+                clientName: 'Estudio Jurídico Martínez',
+                clientPhone: '+5491199887766',
+                category: 'Corte Láser / CNC',
+                cost: 42000,
+                specs: 'Acrílico cristal 5mm con distanciadores',
+                description: 'Placa institucional grabada y pintada en bajorrelieve dorado',
+                priority: 'normal',
+                hours: 5,
+                date: new Date().toISOString().split('T')[0],
+                status: 'pending',
+                createdAt: Date.now() - 3600000 * 3
+            },
+            {
+                id: 'ord-203',
+                clientName: 'Indumentaria Urban Style',
+                clientPhone: '+5491155443322',
+                category: 'Vinilo / Microperforado',
+                cost: 110000,
+                specs: 'Vidriera completa local comercial (2x3m)',
+                description: 'Vinilo esmerilado con isotipo calado y vinilo impreso brillante full color',
+                priority: 'evento',
+                hours: 8,
+                date: new Date().toISOString().split('T')[0],
+                status: 'pending',
+                createdAt: Date.now() - 3600000 * 2
+            },
+            {
+                id: 'ord-204',
+                clientName: 'Arquitectura & Diseño Studio',
+                clientPhone: '+5491177889900',
+                category: 'Impresión 3D',
+                cost: 35000,
+                specs: 'Maqueta volumétrica escala 1:100',
+                description: 'Impresión en PLA blanco y gris alta definición de edificio corporativo',
+                priority: 'normal',
+                hours: 14,
+                date: new Date().toISOString().split('T')[0],
+                status: 'pending',
+                createdAt: Date.now() - 3600000 * 1
+            }
+        ];
+
+        let cancellationLog = JSON.parse(localStorage.getItem('altorelieve_cancellations')) || [];
+        let currentFilter = 'all';
+
+        function saveOrders() {
+            localStorage.setItem('altorelieve_orders', JSON.stringify(orders));
+            localStorage.setItem('altorelieve_cancellations', JSON.stringify(cancellationLog));
+            renderApp();
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const msgEl = document.getElementById('toast-message');
+            const iconEl = document.getElementById('toast-icon');
+            
+            msgEl.textContent = message;
+            if(type === 'success') {
+                iconEl.className = 'fa-solid fa-circle-check text-emerald-400 text-lg';
+            } else if(type === 'warning') {
+                iconEl.className = 'fa-solid fa-triangle-exclamation text-amber-400 text-lg';
+            } else {
+                iconEl.className = 'fa-solid fa-circle-info text-blue-400 text-lg';
+            }
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3500);
+        }
+
+        function openNewOrderModal() {
+            document.getElementById('modal-title').textContent = 'Nuevo Pedido de Cartelería / 3D';
+            document.getElementById('order-id').value = '';
+            document.getElementById('client-name').value = '';
+            document.getElementById('client-phone').value = '';
+            document.getElementById('order-category').value = 'Letras Corpóreas';
+            document.getElementById('order-cost').value = '';
+            document.getElementById('order-specs').value = '';
+            document.getElementById('order-desc').value = '';
+            document.getElementById('order-priority').value = 'normal';
+            document.getElementById('order-time').value = '6';
+            document.getElementById('order-time-unit').value = 'hours';
+            document.getElementById('order-date').value = new Date().toISOString().split('T')[0];
+            
+            document.getElementById('order-modal').classList.remove('hidden');
+        }
+
+        function editOrder(id) {
+            const order = orders.find(o => o.id === id);
+            if(!order) return;
+
+            document.getElementById('modal-title').textContent = 'Editar Pedido';
+            document.getElementById('order-id').value = order.id;
+            document.getElementById('client-name').value = order.clientName;
+            document.getElementById('client-phone').value = order.clientPhone;
+            document.getElementById('order-category').value = order.category;
+            document.getElementById('order-cost').value = order.cost || 0;
+            document.getElementById('order-specs').value = order.specs || '';
+            document.getElementById('order-desc').value = order.description;
+            document.getElementById('order-priority').value = order.priority;
+            
+            if(order.hours >= 24 && order.hours % 24 === 0) {
+                document.getElementById('order-time').value = order.hours / 24;
+                document.getElementById('order-time-unit').value = 'days';
+            } else {
+                document.getElementById('order-time').value = order.hours;
+                document.getElementById('order-time-unit').value = 'hours';
+            }
+            
+            document.getElementById('order-date').value = order.date;
+            document.getElementById('order-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('order-modal').classList.add('hidden');
+        }
+
+        function handleFormSubmit(event) {
+            event.preventDefault();
+            const id = document.getElementById('order-id').value;
+            const clientName = document.getElementById('client-name').value;
+            const clientPhone = document.getElementById('client-phone').value;
+            const category = document.getElementById('order-category').value;
+            const cost = parseFloat(document.getElementById('order-cost').value) || 0;
+            const specs = document.getElementById('order-specs').value;
+            const description = document.getElementById('order-desc').value;
+            const priority = document.getElementById('order-priority').value;
+            
+            let timeVal = parseFloat(document.getElementById('order-time').value);
+            const timeUnit = document.getElementById('order-time-unit').value;
+            const hours = timeUnit === 'days' ? timeVal * 24 : timeVal;
+            const date = document.getElementById('order-date').value;
+
+            if(id) {
+                const index = orders.findIndex(o => o.id === id);
+                if(index !== -1) {
+                    orders[index] = {
+                        ...orders[index],
+                        clientName, clientPhone, category, cost, specs, description, priority, hours, date
+                    };
+                    showToast('Pedido actualizado correctamente');
+                }
+            } else {
+                const newOrder = {
+                    id: 'ord-' + Date.now(),
+                    clientName, clientPhone, category, cost, specs, description, priority, hours, date,
+                    status: 'pending',
+                    createdAt: Date.now()
+                };
+                orders.push(newOrder);
+                showToast('¡Nuevo pedido ingresado al cronograma!');
+            }
+
+            closeModal();
+            saveOrders();
+        }
+
+        // Cancellation / Deletion Modal with bubble reason logic
+        function promptDeleteOrder(id) {
+            document.getElementById('cancel-order-id').value = id;
+            document.getElementById('cancel-reason').value = '';
+            document.getElementById('cancel-modal').classList.remove('hidden');
+        }
+
+        function closeCancelModal() {
+            document.getElementById('cancel-modal').classList.add('hidden');
+        }
+
+        function confirmDeleteOrder(event) {
+            event.preventDefault();
+            const id = document.getElementById('cancel-order-id').value;
+            const reason = document.getElementById('cancel-reason').value;
+
+            const order = orders.find(o => o.id === id);
+            if(order) {
+                cancellationLog.push({
+                    orderId: order.id,
+                    clientName: order.clientName,
+                    category: order.category,
+                    cost: order.cost,
+                    reason: reason,
+                    date: new Date().toISOString()
+                });
+
+                orders = orders.filter(o => o.id !== id);
+                showToast('Pedido cancelado y registrado en historial', 'warning');
+                closeCancelModal();
+                saveOrders();
+            }
+        }
+
+        function changeStatus(id, newStatus) {
+            const activeOrder = orders.find(o => o.status === 'active');
+            
+            if(newStatus === 'active' && activeOrder && activeOrder.id !== id) {
+                showToast('Ya hay un trabajo activo en el taller. Finalice o pause el actual primero.', 'warning');
+                return;
+            }
+
+            const order = orders.find(o => o.id === id);
+            if(order) {
+                order.status = newStatus;
+                showToast(`Estado actualizado: ${newStatus.toUpperCase()}`);
+                saveOrders();
+            }
+        }
+
+        function setFilter(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.className = 'filter-btn px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-900 text-slate-400 hover:bg-slate-800 transition whitespace-nowrap';
+            });
+            document.getElementById(`filter-${filter}`).className = 'filter-btn px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-800 text-white transition whitespace-nowrap shadow-sm';
+            renderApp();
+        }
+
+        function calculateEstimatedDeliveries() {
+            let runningHours = 0;
+            const active = orders.find(o => o.status === 'active');
+            if(active) {
+                runningHours += active.hours;
+            }
+
+            const now = new Date();
+            let accumulatedTimeMs = now.getTime() + (runningHours * 3600 * 1000);
+            const pendingQueue = orders.filter(o => o.status === 'pending');
+            const deliveryEstimates = {};
+            
+            if(active) {
+                deliveryEstimates[active.id] = new Date(now.getTime() + (active.hours * 3600 * 1000));
+            }
+
+            pendingQueue.forEach(order => {
+                accumulatedTimeMs += (order.hours * 3600 * 1000);
+                deliveryEstimates[order.id] = new Date(accumulatedTimeMs);
+            });
+
+            return deliveryEstimates;
+        }
+
+        function formatDateReadable(date) {
+            if(!date) return 'Sin definir';
+            const options = { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' };
+            return date.toLocaleDateString('es-ES', options);
+        }
+
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(amount || 0);
+        }
+
+        function openWhatsAppModal(id) {
+            const order = orders.find(o => o.id === id);
+            if(!order) return;
+
+            const estimates = calculateEstimatedDeliveries();
+            const estDate = estimates[order.id] ? formatDateReadable(estimates[order.id]) : 'Próximamente';
+
+            let statusText = "se encuentra agendado en nuestro cronograma de taller";
+            if(order.status === 'active') statusText = "está siendo fabricado ahora mismo en nuestro taller";
+            if(order.status === 'ready') statusText = "¡ya está finalizado y listo para retirar / instalar!";
+            if(order.status === 'delivered') statusText = "ha sido entregado con éxito. ¡Gracias por confiar en nosotros!";
+
+            const message = `¡Hola ${order.clientName}! 👋 Te escribimos de *ALTO RELIEVE*. 
+Tu pedido de *[${order.category}]* ${statusText}.
+${order.status !== 'ready' && order.status !== 'delivered' ? `📅 Fecha estimada de entrega: *${estDate}*` : ''}
+
+Cualquier duda quedamos a tu disposición. ¡Muchas gracias! 🛠️✨`;
+            
+            document.getElementById('whatsapp-text').value = message;
+            
+            let cleanPhone = order.clientPhone.replace(/\D/g, '');
+            const waLink = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+            document.getElementById('whatsapp-link').href = waLink;
+
+            document.getElementById('whatsapp-modal').classList.remove('hidden');
+        }
+
+        function closeWhatsAppModal() {
+            document.getElementById('whatsapp-modal').classList.add('hidden');
+        }
+
+        function copyWhatsAppText() {
+            const textVal = document.getElementById('whatsapp-text').value;
+            const textArea = document.createElement("textarea");
+            textArea.value = textVal;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            showToast('Mensaje copiado al portapapeles');
+        }
+
+        function renderApp() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            
+            let filtered = orders.filter(o => {
+                const matchesSearch = o.clientName.toLowerCase().includes(searchTerm) || 
+                                      o.clientPhone.toLowerCase().includes(searchTerm) || 
+                                      o.description.toLowerCase().includes(searchTerm) ||
+                                      o.category.toLowerCase().includes(searchTerm) ||
+                                      String(o.cost).includes(searchTerm) ||
+                                      (o.specs && o.specs.toLowerCase().includes(searchTerm));
+                if(currentFilter !== 'all' && o.status !== currentFilter) return false;
+                return matchesSearch;
+            });
+
+            const deliveryMap = calculateEstimatedDeliveries();
+
+            const colPending = document.getElementById('col-pending');
+            const colActive = document.getElementById('col-active');
+            const colReady = document.getElementById('col-ready');
+            const colDelivered = document.getElementById('col-delivered');
+
+            colPending.innerHTML = '';
+            colActive.innerHTML = '';
+            colReady.innerHTML = '';
+            colDelivered.innerHTML = '';
+
+            let countPending = 0, countActive = 0, countReady = 0, countDelivered = 0;
+            let totalWorkloadHours = 0;
+
+            orders.forEach(o => {
+                if(o.status === 'pending') { countPending++; totalWorkloadHours += o.hours; }
+                if(o.status === 'active') { countActive++; totalWorkloadHours += o.hours; }
+                if(o.status === 'ready') { countReady++; }
+                if(o.status === 'delivered') { countDelivered++; }
+            });
+
+            document.getElementById('stat-pending').textContent = countPending;
+            document.getElementById('stat-active').textContent = countActive;
+            document.getElementById('stat-workload').textContent = totalWorkloadHours + 'h';
+            document.getElementById('stat-done').textContent = countReady + countDelivered;
+
+            document.getElementById('count-pending').textContent = orders.filter(o => o.status === 'pending').length;
+            document.getElementById('count-active').textContent = orders.filter(o => o.status === 'active').length;
+            document.getElementById('count-ready').textContent = orders.filter(o => o.status === 'ready').length;
+            document.getElementById('count-delivered').textContent = orders.filter(o => o.status === 'delivered').length;
+
+            const warningEl = document.getElementById('active-warning');
+            if(countActive > 0) {
+                warningEl.classList.remove('hidden');
+            } else {
+                warningEl.classList.add('hidden');
+            }
+
+            filtered.forEach(order => {
+                const estDateObj = deliveryMap[order.id];
+                const estDateStr = estDateObj ? formatDateReadable(estDateObj) : 'Calculado...';
+                
+                let priorityBadge = '';
+                if(order.priority === 'urgente') {
+                    priorityBadge = '<span class="bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[10px] px-2 py-0.5 rounded-full font-bold">Urgente 🔥</span>';
+                } else if(order.priority === 'evento') {
+                    priorityBadge = '<span class="bg-purple-500/20 text-purple-400 border border-purple-500/30 text-[10px] px-2 py-0.5 rounded-full font-bold">Fecha Fija 🎯</span>';
+                } else {
+                    priorityBadge = '<span class="bg-slate-800 text-slate-300 text-[10px] px-2 py-0.5 rounded-full font-medium">Normal</span>';
+                }
+
+                let categoryIcon = 'fa-tag';
+                if(order.category.includes('Corpóreas')) categoryIcon = 'fa-font';
+                else if(order.category.includes('Exterior')) categoryIcon = 'fa-building';
+                else if(order.category.includes('3D')) categoryIcon = 'fa-cube';
+                else if(order.category.includes('Láser')) categoryIcon = 'fa-bolt';
+                else if(order.category.includes('Vinilo')) categoryIcon = 'fa-palette';
+
+                const cardHtml = `
+                    <div class="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl p-4 shadow-sm flex flex-col gap-3 transition group">
+                        <div class="flex justify-between items-start gap-2">
+                            <div>
+                                <span class="text-xs text-slate-400 font-medium block"><i class="fa-solid fa-user text-slate-500 mr-1"></i> ${escapeHtml(order.clientName)}</span>
+                                <a href="tel:${escapeHtml(order.clientPhone)}" class="text-xs text-blue-400 hover:underline flex items-center gap-1 mt-0.5 font-semibold">
+                                    <i class="fa-solid fa-phone text-[10px]"></i> ${escapeHtml(order.clientPhone)}
+                                </a>
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                ${priorityBadge}
+                                <div class="relative group/menu inline-block">
+                                    <button class="text-slate-500 hover:text-slate-300 p-1 rounded transition"><i class="fa-solid fa-ellipsis-vertical text-sm"></i></button>
+                                    <div class="absolute right-0 mt-1 w-36 bg-slate-950 border border-slate-800 rounded-xl shadow-xl hidden group-hover/menu:block z-20 py-1">
+                                        <button onclick="editOrder('${order.id}')" class="w-full text-left px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-900 flex items-center gap-2"><i class="fa-solid fa-pen text-slate-400"></i> Editar</button>
+                                        <button onclick="promptDeleteOrder('${order.id}')" class="w-full text-left px-3 py-1.5 text-xs text-rose-400 hover:bg-slate-900 flex items-center gap-2"><i class="fa-solid fa-trash"></i> Eliminar</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Category, Specs & Cost -->
+                        <div class="bg-slate-950/70 p-2.5 rounded-xl border border-slate-800/80 flex flex-col gap-1.5">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-bold text-blue-400 flex items-center gap-1.5">
+                                    <i class="fa-solid ${categoryIcon}"></i> ${escapeHtml(order.category)}
+                                </span>
+                                <span class="text-xs font-extrabold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                                    ${formatCurrency(order.cost)}
+                                </span>
+                            </div>
+                            ${order.specs ? `<span class="text-[11px] text-slate-400 font-mono">📏 ${escapeHtml(order.specs)}</span>` : ''}
+                            <p class="text-xs text-slate-200 mt-0.5 leading-relaxed">${escapeHtml(order.description)}</p>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2 text-xs bg-slate-950/90 p-2.5 rounded-xl border border-slate-800">
+                            <div>
+                                <span class="text-slate-500 block text-[10px] uppercase font-semibold">Tiempo Fábrica</span>
+                                <span class="text-white font-bold"><i class="fa-regular fa-clock text-blue-400 mr-1"></i> ${order.hours} hs</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-500 block text-[10px] uppercase font-semibold">Entrega Est.</span>
+                                <span class="text-blue-300 font-medium text-[11px]">${estDateStr}</span>
+                            </div>
+                        </div>
+
+                        <!-- Action controls -->
+                        <div class="flex items-center justify-between pt-2 border-t border-slate-800 gap-2">
+                            <button onclick="openWhatsAppModal('${order.id}')" class="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-600/30 px-3 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1.5" title="Enviar WhatsApp al cliente">
+                                <i class="fa-brands fa-whatsapp text-sm"></i> WhatsApp
+                            </button>
+                            
+                            <div class="flex items-center gap-1">
+                                ${order.status !== 'pending' ? `<button onclick="changeStatus('${order.id}', 'pending')" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs" title="Mover a Cola"><i class="fa-solid fa-arrow-left"></i></button>` : ''}
+                                ${order.status !== 'active' ? `<button onclick="changeStatus('${order.id}', 'active')" class="p-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs shadow-md" title="Iniciar Trabajo (Foco)"><i class="fa-solid fa-play"></i></button>` : ''}
+                                ${order.status !== 'ready' && order.status !== 'delivered' ? `<button onclick="changeStatus('${order.id}', 'ready')" class="p-1.5 bg-indigo-600/30 hover:bg-indigo-600 text-indigo-200 rounded-xl text-xs" title="Marcar Listo / Control"><i class="fa-solid fa-check"></i></button>` : ''}
+                                ${order.status !== 'delivered' ? `<button onclick="changeStatus('${order.id}', 'delivered')" class="p-1.5 bg-emerald-600/30 hover:bg-emerald-600 text-emerald-200 rounded-xl text-xs" title="Marcar Entregado"><i class="fa-solid fa-flag-checkered"></i></button>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                if(order.status === 'pending') colPending.innerHTML += cardHtml;
+                else if(order.status === 'active') colActive.innerHTML += cardHtml;
+                else if(order.status === 'ready') colReady.innerHTML += cardHtml;
+                else if(order.status === 'delivered') colDelivered.innerHTML += cardHtml;
+            });
+        }
+
+        function escapeHtml(text) {
+            if(!text) return '';
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+            return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+        }
+
+        window.onload = function() {
+            renderApp();
+        };
+    </script>
+</body>
+</html>
