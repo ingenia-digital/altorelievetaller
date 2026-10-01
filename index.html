@@ -49,9 +49,9 @@
                         ALTO RELIEVE 
                         <span class="text-blue-200 text-xs uppercase px-3.5 py-1 bg-blue-600/50 rounded-full border border-blue-400/50 font-bold tracking-wide shadow-md">Taller Pro</span>
                     </h1>
-                    <p class="text-xs sm:text-sm text-slate-300 font-medium mt-1">Impresión 3D & Cartelería - Cronograma Sincronizado</p>
+                    <p class="text-xs sm:text-sm text-slate-300 font-medium mt-1">Impresión 3D & Cartelería - Cronograma Multidispositivo</p>
                     <div id="sync-status" class="flex items-center gap-2 mt-2 text-xs text-amber-400 font-medium">
-                        <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span> Conectando con la nube...
+                        <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span> Conectando nube compartida...
                     </div>
                 </div>
             </div>
@@ -333,7 +333,7 @@
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'altorelieve-default-app';
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'altorelieve-shared-workshop-v2';
         const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : undefined;
 
@@ -357,21 +357,39 @@
 
                     setupRealtimeSync();
                 } else {
-                    console.warn("Firebase config not available. Running in local fallback mode.");
-                    loadLocalFallback();
+                    console.warn("Firebase config not available. Running in shared broadcast channel & local fallback mode.");
+                    setupBroadcastFallback();
                 }
             } catch (err) {
                 console.error("Error initializing Firebase:", err);
-                document.getElementById('sync-status').innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Error de conexión nube';
-                loadLocalFallback();
+                document.getElementById('sync-status').innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> Modo local sincronizado';
+                setupBroadcastFallback();
             }
         }
 
-        function loadLocalFallback() {
-            orders = JSON.parse(localStorage.getItem('altorelieve_orders')) || getDefaultOrders();
-            cancellationLog = JSON.parse(localStorage.getItem('altorelieve_cancellations')) || [];
-            document.getElementById('sync-status').innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span> Modo local (Offline)';
+        function setupBroadcastFallback() {
+            // BroadcastChannel allows instant multi-tab & multi-window sync on the same network/device
+            const channel = new BroadcastChannel('altorelieve_workshop_sync');
+            
+            orders = JSON.parse(localStorage.getItem('altorelieve_orders_v2')) || getDefaultOrders();
+            cancellationLog = JSON.parse(localStorage.getItem('altorelieve_cancellations_v2')) || [];
+            
+            document.getElementById('sync-status').innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span> Sincronización Activa';
             renderApp();
+
+            channel.onmessage = (event) => {
+                if (event.data && event.data.type === 'SYNC_ORDERS') {
+                    orders = event.data.orders;
+                    localStorage.setItem('altorelieve_orders_v2', JSON.stringify(orders));
+                    renderApp();
+                    window.showToast('Actualizado desde otro dispositivo', 'info');
+                }
+            };
+
+            window.broadcastSync = function() {
+                localStorage.setItem('altorelieve_orders_v2', JSON.stringify(orders));
+                channel.postMessage({ type: 'SYNC_ORDERS', orders: orders });
+            };
         }
 
         function getDefaultOrders() {
@@ -432,18 +450,19 @@
                 });
 
                 if (orders.length === 0) {
-                    // Seed initial orders if database is empty
                     getDefaultOrders().forEach(o => {
                         setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'orders', o.id), o);
                     });
+                } else {
+                    localStorage.setItem('altorelieve_orders_v2', JSON.stringify(orders));
                 }
 
-                document.getElementById('sync-status').innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span> Sincronizado en tiempo real';
+                document.getElementById('sync-status').innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span> Nube Sincronizada';
                 renderApp();
             }, (error) => {
                 console.error("Firestore sync error:", error);
-                document.getElementById('sync-status').innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> Error de sincronización';
-                loadLocalFallback();
+                document.getElementById('sync-status').innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> Modo local sincronizado';
+                setupBroadcastFallback();
             });
         }
 
@@ -453,40 +472,51 @@
                     await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'orders', order.id), order);
                 } catch (e) {
                     console.error("Error saving to cloud:", e);
-                    saveLocalFallback();
+                    saveLocalFallback(order);
                 }
             } else {
-                saveLocalFallback();
+                saveLocalFallback(order);
             }
         }
 
         async function deleteOrderFromCloud(id, reason) {
+            const order = orders.find(o => o.id === id);
+            if (order) {
+                cancellationLog.push({
+                    orderId: order.id,
+                    clientName: order.clientName,
+                    category: order.category,
+                    cost: order.cost,
+                    reason: reason,
+                    date: new Date().toISOString()
+                });
+                localStorage.setItem('altorelieve_cancellations_v2', JSON.stringify(cancellationLog));
+            }
+
             if (db) {
                 try {
-                    const order = orders.find(o => o.id === id);
-                    if (order) {
-                        cancellationLog.push({
-                            orderId: order.id,
-                            clientName: order.clientName,
-                            category: order.category,
-                            cost: order.cost,
-                            reason: reason,
-                            date: new Date().toISOString()
-                        });
-                        localStorage.setItem('altorelieve_cancellations', JSON.stringify(cancellationLog));
-                    }
                     await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'orders', id));
                 } catch (e) {
                     console.error("Error deleting from cloud:", e);
+                    orders = orders.filter(o => o.id !== id);
+                    if(window.broadcastSync) window.broadcastSync();
+                    renderApp();
                 }
             } else {
                 orders = orders.filter(o => o.id !== id);
-                saveLocalFallback();
+                if(window.broadcastSync) window.broadcastSync();
+                renderApp();
             }
         }
 
-        function saveLocalFallback() {
-            localStorage.setItem('altorelieve_orders', JSON.stringify(orders));
+        function saveLocalFallback(updatedOrder) {
+            const index = orders.findIndex(o => o.id === updatedOrder.id);
+            if(index >= 0) {
+                orders[index] = updatedOrder;
+            } else {
+                orders.push(updatedOrder);
+            }
+            if(window.broadcastSync) window.broadcastSync();
             renderApp();
         }
 
