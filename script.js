@@ -78,3 +78,31 @@ app.delete('/api/pedidos/:id', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor corriendo en puerto ${PORT}`));
+
+function enviarWhatsApp(telefonoCliente, nombreCliente, descripcionTrabajo, costo, estado) {
+    // Reemplaza '5491112345678' con TU número de WhatsApp (Código país 54 + 9 + característica + número sin 0 ni 15)
+    const miNumeroWhatsApp = "541135911475"; 
+
+    // Si quieres que el mensaje le llegue al cliente, puedes usar 'telefonoCliente'. 
+    // Pero si quieres que el mensaje se abra EN TU PROPIO WHATSAPP para enviárselo a alguien, 
+    // o si prefieres que se abra al número del cliente cargado en el pedido, puedes elegir:
+    
+    // Opción A: Que se abra para enviárselo al cliente registrado en el pedido:
+    const telefonoDestino = telefonoCliente ? telefonoCliente.replace(/\D/g, '') : miNumeroWhatsApp;
+
+    // Redactamos el mensaje según el estado del trabajo
+    let textoMensaje = `¡Hola ${nombreCliente}! Te escribimos de *Alto Relieve* (Impresión 3D y Cartelería). `;
+    
+    if (estado === 'finalizado') {
+        textoMensaje += `Te contamos que tu trabajo (*${descripcionTrabajo}*) ya está *FINALIZADO* y listo para retirar/entregar. El costo total es de $${costo}. ¡Esperamos que te encante!`;
+    } else {
+        textoMensaje += `Queríamos informarte sobre el estado de tu pedido (*${descripcionTrabajo}*). Comunicate con nosotros para más detalles.`;
+    }
+
+    // Codificamos el texto para que funcione bien en la URL
+    const mensajeCodificado = encodeURIComponent(textoMensaje);
+
+    // Abrimos WhatsApp (funciona tanto en compu como en celular)
+    const urlWhatsApp = `https://wa.me/${telefonoDestino}?text=${mensajeCodificado}`;
+    window.open(urlWhatsApp, '_blank');
+}
