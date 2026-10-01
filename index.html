@@ -38,22 +38,26 @@
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col custom-scrollbar">
 
     <header class="bg-gradient-to-r from-blue-900 via-slate-900 to-slate-900 border-b border-blue-500/30 sticky top-0 z-40 shadow-2xl">
-        <div class="max-w-7xl mx-auto px-4 py-3 sm:px-6 flex justify-between items-center">
-            <div class="flex items-center space-x-4">
-                <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-blue-950 p-2 shadow-xl shadow-blue-600/30 flex items-center justify-center overflow-hidden border-2 border-blue-400/50 transform hover:scale-105 transition-transform duration-300">
-                    <img src="https://uploads.onecompiler.io/43vjzagjf/1790774308130/ecd79465-504a-46bd-817c-660fb34ddf19-removebg-preview.png" alt="Alto Relieve Logo" class="w-full h-full object-contain filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]" onerror="this.src='https://placehold.co/120x120/1d4ed8/ffffff?text=AR'">
+        <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center space-x-5">
+                <!-- Large Logo with Blue Background Container -->
+                <div class="w-28 h-28 sm:w-32 sm:h-32 rounded-3xl bg-blue-950 p-3 shadow-2xl shadow-blue-600/40 flex items-center justify-center overflow-hidden border-4 border-blue-400/60 transform hover:scale-105 transition-transform duration-300">
+                    <img src="https://uploads.onecompiler.io/43vjzagjf/1790774308130/ecd79465-504a-46bd-817c-660fb34ddf19-removebg-preview.png" alt="Alto Relieve Logo" class="w-full h-full object-contain filter drop-shadow-[0_4px_8px_rgba(0,0,0,0.6)]" onerror="this.src='https://placehold.co/150x150/1d4ed8/ffffff?text=AR'">
                 </div>
                 <div>
-                    <h1 class="text-xl sm:text-2xl font-extrabold tracking-tight text-white flex items-center gap-2.5">
+                    <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white flex items-center gap-3">
                         ALTO RELIEVE 
-                        <span class="text-blue-300 text-xs uppercase px-3 py-1 bg-blue-600/40 rounded-full border border-blue-400/40 font-bold tracking-wide shadow-sm">Taller Pro</span>
+                        <span class="text-blue-200 text-xs uppercase px-3.5 py-1 bg-blue-600/50 rounded-full border border-blue-400/50 font-bold tracking-wide shadow-md">Taller Pro</span>
                     </h1>
-                    <p class="text-xs sm:text-sm text-slate-300 font-medium">Impresión 3D & Cartelería - Cronograma y Producción</p>
+                    <p class="text-xs sm:text-sm text-slate-300 font-medium mt-1">Impresión 3D & Cartelería - Cronograma Sincronizado</p>
+                    <div id="sync-status" class="flex items-center gap-2 mt-2 text-xs text-amber-400 font-medium">
+                        <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span> Conectando con la nube...
+                    </div>
                 </div>
             </div>
-            <div class="flex items-center space-x-3">
-                <button onclick="openNewOrderModal()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 sm:px-5 py-2.5 sm:py-3 rounded-2xl text-sm transition shadow-lg shadow-blue-600/30 flex items-center gap-2 border border-blue-400/30">
-                    <i class="fa-solid fa-plus text-xs"></i> <span class="hidden sm:inline">Nuevo Pedido</span>
+            <div class="flex items-center space-x-3 w-full sm:w-auto justify-end">
+                <button onclick="openNewOrderModal()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-5 py-3 rounded-2xl text-sm transition shadow-lg shadow-blue-600/30 flex items-center gap-2 border border-blue-400/30">
+                    <i class="fa-solid fa-plus text-xs"></i> <span>Nuevo Pedido</span>
                 </button>
             </div>
         </div>
@@ -85,7 +89,7 @@
                 <div class="absolute right-3 top-3 text-slate-800 text-3xl"><i class="fa-solid fa-flag-checkered"></i></div>
                 <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Entregados / Listos</span>
                 <h3 id="stat-done" class="text-2xl sm:text-3xl font-bold text-emerald-400 mt-1">0</h3>
-                <p class="text-xs text-slate-500 mt-1">Completados este mes</p>
+                <p class="text-xs text-slate-500 mt-1">Completados</p>
             </div>
         </section>
 
@@ -324,77 +328,170 @@
         <span id="toast-message">Operación exitosa</span>
     </div>
 
-    <script>
-        // Initial sample orders pre-loaded for Alto Relieve
-        let orders = JSON.parse(localStorage.getItem('altorelieve_orders')) || [
-            {
-                id: 'ord-201',
-                clientName: 'Café & Panadería Le Pain',
-                clientPhone: '+5491122334455',
-                category: 'Letras Corpóreas',
-                cost: 85000,
-                specs: '1.20m x 0.40m, PVC 20mm',
-                description: 'Corpóreos pintados en dorado mate con iluminación indirecta trasera',
-                priority: 'urgente',
-                hours: 12,
-                date: new Date().toISOString().split('T')[0],
-                status: 'active',
-                createdAt: Date.now() - 3600000 * 6
-            },
-            {
-                id: 'ord-202',
-                clientName: 'Estudio Jurídico Martínez',
-                clientPhone: '+5491199887766',
-                category: 'Corte Láser / CNC',
-                cost: 42000,
-                specs: 'Acrílico cristal 5mm con distanciadores',
-                description: 'Placa institucional grabada y pintada en bajorrelieve dorado',
-                priority: 'normal',
-                hours: 5,
-                date: new Date().toISOString().split('T')[0],
-                status: 'pending',
-                createdAt: Date.now() - 3600000 * 3
-            },
-            {
-                id: 'ord-203',
-                clientName: 'Indumentaria Urban Style',
-                clientPhone: '+5491155443322',
-                category: 'Vinilo / Microperforado',
-                cost: 110000,
-                specs: 'Vidriera completa local comercial (2x3m)',
-                description: 'Vinilo esmerilado con isotipo calado y vinilo impreso brillante full color',
-                priority: 'evento',
-                hours: 8,
-                date: new Date().toISOString().split('T')[0],
-                status: 'pending',
-                createdAt: Date.now() - 3600000 * 2
-            },
-            {
-                id: 'ord-204',
-                clientName: 'Arquitectura & Diseño Studio',
-                clientPhone: '+5491177889900',
-                category: 'Impresión 3D',
-                cost: 35000,
-                specs: 'Maqueta volumétrica escala 1:100',
-                description: 'Impresión en PLA blanco y gris alta definición de edificio corporativo',
-                priority: 'normal',
-                hours: 14,
-                date: new Date().toISOString().split('T')[0],
-                status: 'pending',
-                createdAt: Date.now() - 3600000 * 1
-            }
-        ];
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        let cancellationLog = JSON.parse(localStorage.getItem('altorelieve_cancellations')) || [];
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'altorelieve-default-app';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : undefined;
+
+        let app, db, auth;
+        let orders = [];
+        let cancellationLog = [];
         let currentFilter = 'all';
 
-        function saveOrders() {
-            localStorage.setItem('altorelieve_orders', JSON.stringify(orders));
-            localStorage.setItem('altorelieve_cancellations', JSON.stringify(cancellationLog));
+        async function initFirebase() {
+            try {
+                if (Object.keys(firebaseConfig).length > 0) {
+                    app = initializeApp(firebaseConfig);
+                    db = getFirestore(app);
+                    auth = getAuth(app);
+
+                    if (initialAuthToken) {
+                        await signInWithCustomToken(auth, initialAuthToken);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+
+                    setupRealtimeSync();
+                } else {
+                    console.warn("Firebase config not available. Running in local fallback mode.");
+                    loadLocalFallback();
+                }
+            } catch (err) {
+                console.error("Error initializing Firebase:", err);
+                document.getElementById('sync-status').innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Error de conexión nube';
+                loadLocalFallback();
+            }
+        }
+
+        function loadLocalFallback() {
+            orders = JSON.parse(localStorage.getItem('altorelieve_orders')) || getDefaultOrders();
+            cancellationLog = JSON.parse(localStorage.getItem('altorelieve_cancellations')) || [];
+            document.getElementById('sync-status').innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span> Modo local (Offline)';
             renderApp();
         }
 
-        function showToast(message, type = 'success') {
+        function getDefaultOrders() {
+            const today = new Date().toISOString().split('T')[0];
+            return [
+                {
+                    id: 'ord-201',
+                    clientName: 'Café & Panadería Le Pain',
+                    clientPhone: '+5491122334455',
+                    category: 'Letras Corpóreas',
+                    cost: 85000,
+                    specs: '1.20m x 0.40m, PVC 20mm',
+                    description: 'Corpóreos pintados en dorado mate con iluminación indirecta trasera',
+                    priority: 'urgente',
+                    hours: 12,
+                    date: today,
+                    status: 'active',
+                    createdAt: Date.now() - 3600000 * 6
+                },
+                {
+                    id: 'ord-202',
+                    clientName: 'Estudio Jurídico Martínez',
+                    clientPhone: '+5491199887766',
+                    category: 'Corte Láser / CNC',
+                    cost: 42000,
+                    specs: 'Acrílico cristal 5mm con distanciadores',
+                    description: 'Placa institucional grabada y pintada en bajorrelieve dorado',
+                    priority: 'normal',
+                    hours: 5,
+                    date: today,
+                    status: 'pending',
+                    createdAt: Date.now() - 3600000 * 3
+                },
+                {
+                    id: 'ord-203',
+                    clientName: 'Indumentaria Urban Style',
+                    clientPhone: '+5491155443322',
+                    category: 'Vinilo / Microperforado',
+                    cost: 110000,
+                    specs: 'Vidriera completa local comercial (2x3m)',
+                    description: 'Vinilo esmerilado con isotipo calado y vinilo impreso brillante full color',
+                    priority: 'evento',
+                    hours: 8,
+                    date: today,
+                    status: 'pending',
+                    createdAt: Date.now() - 3600000 * 2
+                }
+            ];
+        }
+
+        function setupRealtimeSync() {
+            const ordersCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'orders');
+            
+            onSnapshot(ordersCollectionRef, (snapshot) => {
+                orders = [];
+                snapshot.forEach((docSnap) => {
+                    orders.push({ id: docSnap.id, ...docSnap.data() });
+                });
+
+                if (orders.length === 0) {
+                    // Seed initial orders if database is empty
+                    getDefaultOrders().forEach(o => {
+                        setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'orders', o.id), o);
+                    });
+                }
+
+                document.getElementById('sync-status').innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span> Sincronizado en tiempo real';
+                renderApp();
+            }, (error) => {
+                console.error("Firestore sync error:", error);
+                document.getElementById('sync-status').innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> Error de sincronización';
+                loadLocalFallback();
+            });
+        }
+
+        async function saveOrderToCloud(order) {
+            if (db) {
+                try {
+                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'orders', order.id), order);
+                } catch (e) {
+                    console.error("Error saving to cloud:", e);
+                    saveLocalFallback();
+                }
+            } else {
+                saveLocalFallback();
+            }
+        }
+
+        async function deleteOrderFromCloud(id, reason) {
+            if (db) {
+                try {
+                    const order = orders.find(o => o.id === id);
+                    if (order) {
+                        cancellationLog.push({
+                            orderId: order.id,
+                            clientName: order.clientName,
+                            category: order.category,
+                            cost: order.cost,
+                            reason: reason,
+                            date: new Date().toISOString()
+                        });
+                        localStorage.setItem('altorelieve_cancellations', JSON.stringify(cancellationLog));
+                    }
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'orders', id));
+                } catch (e) {
+                    console.error("Error deleting from cloud:", e);
+                }
+            } else {
+                orders = orders.filter(o => o.id !== id);
+                saveLocalFallback();
+            }
+        }
+
+        function saveLocalFallback() {
+            localStorage.setItem('altorelieve_orders', JSON.stringify(orders));
+            renderApp();
+        }
+
+        // Global exposure for UI interactions
+        window.showToast = function(message, type = 'success') {
             const toast = document.getElementById('toast');
             const msgEl = document.getElementById('toast-message');
             const iconEl = document.getElementById('toast-icon');
@@ -412,9 +509,9 @@
             setTimeout(() => {
                 toast.classList.add('translate-y-20', 'opacity-0');
             }, 3500);
-        }
+        };
 
-        function openNewOrderModal() {
+        window.openNewOrderModal = function() {
             document.getElementById('modal-title').textContent = 'Nuevo Pedido de Cartelería / 3D';
             document.getElementById('order-id').value = '';
             document.getElementById('client-name').value = '';
@@ -429,9 +526,9 @@
             document.getElementById('order-date').value = new Date().toISOString().split('T')[0];
             
             document.getElementById('order-modal').classList.remove('hidden');
-        }
+        };
 
-        function editOrder(id) {
+        window.editOrder = function(id) {
             const order = orders.find(o => o.id === id);
             if(!order) return;
 
@@ -455,13 +552,13 @@
             
             document.getElementById('order-date').value = order.date;
             document.getElementById('order-modal').classList.remove('hidden');
-        }
+        };
 
-        function closeModal() {
+        window.closeModal = function() {
             document.getElementById('order-modal').classList.add('hidden');
-        }
+        };
 
-        function handleFormSubmit(event) {
+        window.handleFormSubmit = async function(event) {
             event.preventDefault();
             const id = document.getElementById('order-id').value;
             const clientName = document.getElementById('client-name').value;
@@ -477,88 +574,74 @@
             const hours = timeUnit === 'days' ? timeVal * 24 : timeVal;
             const date = document.getElementById('order-date').value;
 
+            let orderObj;
             if(id) {
-                const index = orders.findIndex(o => o.id === id);
-                if(index !== -1) {
-                    orders[index] = {
-                        ...orders[index],
-                        clientName, clientPhone, category, cost, specs, description, priority, hours, date
-                    };
-                    showToast('Pedido actualizado correctamente');
-                }
+                const existing = orders.find(o => o.id === id);
+                orderObj = {
+                    ...(existing || {}),
+                    id, clientName, clientPhone, category, cost, specs, description, priority, hours, date,
+                    status: existing ? existing.status : 'pending',
+                    createdAt: existing ? existing.createdAt : Date.now()
+                };
+                window.showToast('Pedido actualizado correctamente');
             } else {
-                const newOrder = {
+                orderObj = {
                     id: 'ord-' + Date.now(),
                     clientName, clientPhone, category, cost, specs, description, priority, hours, date,
                     status: 'pending',
                     createdAt: Date.now()
                 };
-                orders.push(newOrder);
-                showToast('¡Nuevo pedido ingresado al cronograma!');
+                window.showToast('¡Nuevo pedido ingresado al cronograma!');
             }
 
-            closeModal();
-            saveOrders();
-        }
+            window.closeModal();
+            await saveOrderToCloud(orderObj);
+        };
 
-        // Cancellation / Deletion Modal with bubble reason logic
-        function promptDeleteOrder(id) {
+        window.promptDeleteOrder = function(id) {
             document.getElementById('cancel-order-id').value = id;
             document.getElementById('cancel-reason').value = '';
             document.getElementById('cancel-modal').classList.remove('hidden');
-        }
+        };
 
-        function closeCancelModal() {
+        window.closeCancelModal = function() {
             document.getElementById('cancel-modal').classList.add('hidden');
-        }
+        };
 
-        function confirmDeleteOrder(event) {
+        window.confirmDeleteOrder = async function(event) {
             event.preventDefault();
             const id = document.getElementById('cancel-order-id').value;
             const reason = document.getElementById('cancel-reason').value;
 
-            const order = orders.find(o => o.id === id);
-            if(order) {
-                cancellationLog.push({
-                    orderId: order.id,
-                    clientName: order.clientName,
-                    category: order.category,
-                    cost: order.cost,
-                    reason: reason,
-                    date: new Date().toISOString()
-                });
+            await deleteOrderFromCloud(id, reason);
+            window.showToast('Pedido cancelado y registrado en historial', 'warning');
+            window.closeCancelModal();
+        };
 
-                orders = orders.filter(o => o.id !== id);
-                showToast('Pedido cancelado y registrado en historial', 'warning');
-                closeCancelModal();
-                saveOrders();
-            }
-        }
-
-        function changeStatus(id, newStatus) {
+        window.changeStatus = async function(id, newStatus) {
             const activeOrder = orders.find(o => o.status === 'active');
             
             if(newStatus === 'active' && activeOrder && activeOrder.id !== id) {
-                showToast('Ya hay un trabajo activo en el taller. Finalice o pause el actual primero.', 'warning');
+                window.showToast('Ya hay un trabajo activo en el taller. Finalice o pause el actual primero.', 'warning');
                 return;
             }
 
             const order = orders.find(o => o.id === id);
             if(order) {
                 order.status = newStatus;
-                showToast(`Estado actualizado: ${newStatus.toUpperCase()}`);
-                saveOrders();
+                window.showToast(`Estado actualizado: ${newStatus.toUpperCase()}`);
+                await saveOrderToCloud(order);
             }
-        }
+        };
 
-        function setFilter(filter) {
+        window.setFilter = function(filter) {
             currentFilter = filter;
             document.querySelectorAll('.filter-btn').forEach(btn => {
                 btn.className = 'filter-btn px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-900 text-slate-400 hover:bg-slate-800 transition whitespace-nowrap';
             });
             document.getElementById(`filter-${filter}`).className = 'filter-btn px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-800 text-white transition whitespace-nowrap shadow-sm';
             renderApp();
-        }
+        };
 
         function calculateEstimatedDeliveries() {
             let runningHours = 0;
@@ -594,7 +677,7 @@
             return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(amount || 0);
         }
 
-        function openWhatsAppModal(id) {
+        window.openWhatsAppModal = function(id) {
             const order = orders.find(o => o.id === id);
             if(!order) return;
 
@@ -619,13 +702,13 @@ Cualquier duda quedamos a tu disposición. ¡Muchas gracias! 🛠️✨`;
             document.getElementById('whatsapp-link').href = waLink;
 
             document.getElementById('whatsapp-modal').classList.remove('hidden');
-        }
+        };
 
-        function closeWhatsAppModal() {
+        window.closeWhatsAppModal = function() {
             document.getElementById('whatsapp-modal').classList.add('hidden');
-        }
+        };
 
-        function copyWhatsAppText() {
+        window.copyWhatsAppText = function() {
             const textVal = document.getElementById('whatsapp-text').value;
             const textArea = document.createElement("textarea");
             textArea.value = textVal;
@@ -633,11 +716,12 @@ Cualquier duda quedamos a tu disposición. ¡Muchas gracias! 🛠️✨`;
             textArea.select();
             document.execCommand('copy');
             document.body.removeChild(textArea);
-            showToast('Mensaje copiado al portapapeles');
-        }
+            window.showToast('Mensaje copiado al portapapeles');
+        };
 
         function renderApp() {
-            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            const searchInputEl = document.getElementById('search-input');
+            const searchTerm = searchInputEl ? searchInputEl.value.toLowerCase() : '';
             
             let filtered = orders.filter(o => {
                 const matchesSearch = o.clientName.toLowerCase().includes(searchTerm) || 
@@ -656,6 +740,8 @@ Cualquier duda quedamos a tu disposición. ¡Muchas gracias! 🛠️✨`;
             const colActive = document.getElementById('col-active');
             const colReady = document.getElementById('col-ready');
             const colDelivered = document.getElementById('col-delivered');
+
+            if(!colPending) return;
 
             colPending.innerHTML = '';
             colActive.innerHTML = '';
@@ -784,8 +870,11 @@ Cualquier duda quedamos a tu disposición. ¡Muchas gracias! 🛠️✨`;
             return text.replace(/[&<>"']/g, function(m) { return map[m]; });
         }
 
+        window.renderApp = renderApp;
+
+        // Initialize on load
         window.onload = function() {
-            renderApp();
+            initFirebase();
         };
     </script>
 </body>
